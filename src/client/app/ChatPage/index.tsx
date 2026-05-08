@@ -263,6 +263,10 @@ const ChatSidebarContent = memo(function ChatSidebarContent(props: ChatSidebarCo
   )
 })
 
+export function getTerminalPanelDefaultSizes(showTerminalPane: boolean, mainSizes: [number, number]): [number, number] {
+  return showTerminalPane ? mainSizes : [100, 0]
+}
+
 interface DesktopSidebarPaneProps {
   showRightSidebar: boolean
   sizePercent: number
@@ -378,6 +382,8 @@ function ChatWorkspace({
     return <>{chatCard}</>
   }
 
+  const terminalPanelDefaultSizes = getTerminalPanelDefaultSizes(showTerminalPane, terminalLayout.mainSizes)
+
   return (
     <ResizablePanelGroup
       key={projectId}
@@ -386,7 +392,7 @@ function ChatWorkspace({
       className="flex-1 min-h-0"
       onLayoutChanged={onLayoutChanged}
     >
-      <ResizablePanel id="chat" defaultSize={`${terminalLayout.mainSizes[0]}%`} minSize="25%" className="min-h-0">
+      <ResizablePanel id="chat" defaultSize={`${terminalPanelDefaultSizes[0]}%`} minSize="25%" className="min-h-0">
         {chatCard}
       </ResizablePanel>
       <ResizableHandle
@@ -397,7 +403,7 @@ function ChatWorkspace({
       />
       <ResizablePanel
         id="terminal"
-        defaultSize={`${terminalLayout.mainSizes[1]}%`}
+        defaultSize={`${terminalPanelDefaultSizes[1]}%`}
         minSize="0%"
         className="min-h-0"
         elementRef={terminalPanelRef}

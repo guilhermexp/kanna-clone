@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import {
+  getTerminalPanelDefaultSizes,
   getIgnoreFolderEntryFromDiffPath,
   hasFileDragTypes,
   shouldUseMobileRightSidebarOverlay,
@@ -52,5 +53,15 @@ describe("shouldUseMobileRightSidebarOverlay", () => {
   test("keeps the desktop split layout at and above the breakpoint", () => {
     expect(shouldUseMobileRightSidebarOverlay(768)).toBe(false)
     expect(shouldUseMobileRightSidebarOverlay(1280)).toBe(false)
+  })
+})
+
+describe("getTerminalPanelDefaultSizes", () => {
+  test("uses persisted terminal sizes while the terminal is visible", () => {
+    expect(getTerminalPanelDefaultSizes(true, [68, 32])).toEqual([68, 32])
+  })
+
+  test("collapses the terminal panel defaults while the terminal is hidden", () => {
+    expect(getTerminalPanelDefaultSizes(false, [68, 32])).toEqual([100, 0])
   })
 })
