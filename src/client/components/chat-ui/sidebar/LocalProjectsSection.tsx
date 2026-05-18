@@ -26,6 +26,7 @@ import { APP_NAME } from "../../../../shared/branding"
 import { getPathBasename } from "../../../lib/formatters"
 import { cn } from "../../../lib/utils"
 import { ProjectSectionMenu } from "./Menus"
+import { useAppSettingsStore } from "../../../stores/appSettingsStore"
 
 interface Props {
   projectGroups: SidebarProjectGroup[]
@@ -213,6 +214,7 @@ const SortableProjectGroup = memo(function SortableProjectGroup({
   startingLocalPath,
 }: SortableProjectGroupProps) {
   const { groupKey, localPath, title } = group
+  const translucentSidebar = useAppSettingsStore((store) => store.settings?.translucentSidebar === true)
   const isExpanded = expandedGroups.has(groupKey)
   const isEmptyProject = group.chats.length === 0
   const hasMore = group.olderChats.length > 0
@@ -237,7 +239,8 @@ const SortableProjectGroup = memo(function SortableProjectGroup({
     <div
       ref={setActivatorNodeRef}
       className={cn(
-        "sticky top-0 bg-background dark:bg-card z-10 relative p-[10px] flex items-center justify-between",
+        "sticky top-0 z-10 relative p-[10px] flex items-center justify-between",
+        translucentSidebar ? "bg-transparent" : "bg-background dark:bg-card",
         "md:cursor-grab md:active:cursor-grabbing md:select-none md:touch-none",
         isDragging && "cursor-grabbing"
       )}

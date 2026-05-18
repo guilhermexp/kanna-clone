@@ -483,6 +483,7 @@ export function createWsRouter({
       },
     },
     alwaysExpandToolGroups: false,
+    translucentSidebar: false,
     warning: null,
     filePathDisplay: "~/.kanna/data/settings.json",
   }

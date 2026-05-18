@@ -130,6 +130,11 @@ const toolGroupExpandOptions = [
   { value: "expanded" as const, label: "Always expand" },
 ]
 
+const translucentSidebarOptions = [
+  { value: "off" as const, label: "Off" },
+  { value: "on" as const, label: "On" },
+]
+
 const QUICK_RESPONSE_PROVIDER_OPTIONS: Array<{ value: LlmProviderKind; label: string }> = [
   { value: "openai", label: "OpenAI" },
   { value: "openrouter", label: "OpenRouter" },
@@ -1048,6 +1053,12 @@ export function SettingsPage() {
     })
   }
 
+  function handleTranslucentSidebarChange(nextValue: "on" | "off") {
+    void handleWriteAppSettings({ translucentSidebar: nextValue === "on" }).catch((error) => {
+      setAppSettingsError(error instanceof Error ? error.message : "Unable to save sidebar settings.")
+    })
+  }
+
   function handleDefaultProviderChange(nextValue: "last_used" | AgentProvider) {
     setDefaultProvider(nextValue)
     void handleWriteAppSettings({ defaultProvider: nextValue }).catch((error) => {
@@ -1148,6 +1159,7 @@ export function SettingsPage() {
   const analyticsDisclosureEvents = ANALYTICS_STATIC_EVENT_NAMES
   const analyticsSettingValue = appSettings?.analyticsEnabled === false ? "disabled" : "enabled"
   const alwaysExpandToolGroupsValue = appSettings?.alwaysExpandToolGroups === true ? "expanded" : "collapsed"
+  const translucentSidebarValue = appSettings?.translucentSidebar === true ? "on" : "off"
   const selectedSection = sidebarItems.find((item) => item.id === selectedPage) ?? sidebarItems[0]
   const selectedSectionSubtitle =
     selectedPage === "keybindings"
@@ -1393,6 +1405,18 @@ export function SettingsPage() {
                           value={alwaysExpandToolGroupsValue}
                           onValueChange={(value) => handleAlwaysExpandToolGroupsChange(value as "expanded" | "collapsed")}
                           options={toolGroupExpandOptions}
+                          size="sm"
+                        />
+                      </SettingsRow>
+
+                      <SettingsRow
+                        title="Translucent Sidebar"
+                        description="Make the app sidebar translucent with backdrop blur"
+                      >
+                        <SegmentedControl
+                          value={translucentSidebarValue}
+                          onValueChange={(value) => handleTranslucentSidebarChange(value as "on" | "off")}
+                          options={translucentSidebarOptions}
                           size="sm"
                         />
                       </SettingsRow>

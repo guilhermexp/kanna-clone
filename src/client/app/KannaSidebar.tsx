@@ -9,6 +9,7 @@ import { getSidebarChatTimestamp } from "../lib/sidebarChats"
 import { cn } from "../lib/utils"
 import { ChatRow } from "../components/chat-ui/sidebar/ChatRow"
 import { LocalProjectsSection } from "../components/chat-ui/sidebar/LocalProjectsSection"
+import { useAppSettingsStore } from "../stores/appSettingsStore"
 import { getResolvedKeybindings } from "../lib/keybindings"
 import type { KeybindingsSnapshot, SidebarData, SidebarChatRow, UpdateSnapshot } from "../../shared/types"
 import type { SocketStatus } from "./socket"
@@ -106,6 +107,7 @@ function KannaSidebarImpl({
 }: KannaSidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const translucentSidebar = useAppSettingsStore((store) => store.settings?.translucentSidebar === true)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const resizeStartRef = useRef<{ pointerX: number; width: number } | null>(null)
   const initializedCollapsedGroupKeysRef = useRef<Set<string>>(new Set())
@@ -386,7 +388,10 @@ function KannaSidebarImpl({
       <div
         data-sidebar="open"
         className={cn(
-          "fixed inset-0 z-50 bg-background dark:bg-card flex flex-col h-[100dvh] select-none",
+          "fixed inset-0 z-50 flex flex-col h-[100dvh] select-none",
+          translucentSidebar
+            ? "bg-background/60 dark:bg-card/40 backdrop-blur-xl"
+            : "bg-background dark:bg-card",
           "md:relative md:inset-auto md:w-[var(--sidebar-width)] md:mr-0 md:h-[calc(100dvh-16px)] md:my-2 md:ml-2 md:border md:border-border md:rounded-2xl",
           open ? "flex" : "hidden md:flex",
           collapsed && "md:hidden"

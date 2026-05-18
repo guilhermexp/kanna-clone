@@ -741,7 +741,13 @@ const ChatInputInner = forwardRef<ChatInputHandle, Props>(function ChatInput({
                 onHighlight={autocomplete.setHighlightedIndex}
                 onSelect={applyAutocompleteSelection}
                 loading={autocomplete.loading}
-                emptyMessage={autocomplete.trigger?.trigger === "@" ? "No files match" : "No commands match"}
+                emptyMessage={
+                  autocomplete.trigger?.trigger === "@"
+                    ? "No files match"
+                    : autocomplete.trigger?.trigger === "$"
+                      ? "No skills match"
+                      : "No commands match"
+                }
               />
             ) : null}
             <label

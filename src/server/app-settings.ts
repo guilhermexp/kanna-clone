@@ -47,6 +47,7 @@ interface AppSettingsFile {
     codex?: Partial<ProviderPreference<Partial<CodexModelOptions>>> & { effort?: unknown }
   }
   alwaysExpandToolGroups?: unknown
+  translucentSidebar?: unknown
 }
 
 interface AppSettingsState extends AppSettingsSnapshot {
@@ -226,6 +227,7 @@ function toFilePayload(state: AppSettingsState) {
     defaultProvider: state.defaultProvider,
     providerDefaults: state.providerDefaults,
     alwaysExpandToolGroups: state.alwaysExpandToolGroups,
+    translucentSidebar: state.translucentSidebar,
   }
 }
 
@@ -241,6 +243,7 @@ function toSnapshot(state: AppSettingsState): AppSettingsSnapshot {
     defaultProvider: state.defaultProvider,
     providerDefaults: state.providerDefaults,
     alwaysExpandToolGroups: state.alwaysExpandToolGroups,
+    translucentSidebar: state.translucentSidebar,
     warning: state.warning,
     filePathDisplay: state.filePathDisplay,
   }
@@ -292,6 +295,7 @@ function normalizeAppSettings(
     defaultProvider: normalizeDefaultProvider(source?.defaultProvider),
     providerDefaults: normalizeProviderDefaults(source?.providerDefaults),
     alwaysExpandToolGroups: source?.alwaysExpandToolGroups === true,
+    translucentSidebar: source?.translucentSidebar === true,
     warning: null,
     filePathDisplay: formatDisplayPath(filePath),
   }
@@ -321,6 +325,7 @@ function toComparablePayload(source: AppSettingsFile) {
     defaultProvider: source.defaultProvider,
     providerDefaults: source.providerDefaults,
     alwaysExpandToolGroups: source.alwaysExpandToolGroups === true,
+    translucentSidebar: source.translucentSidebar === true,
   }
 }
 

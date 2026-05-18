@@ -46,8 +46,8 @@ export function AutocompletePopover({ items, highlightedIndex, onHighlight, onSe
               idx === highlightedIndex && "bg-accent text-accent-foreground",
             )}
           >
-            <span className={cn("font-medium tabular-nums", item.kind === "command" && "text-foreground")}>
-              {item.kind === "command" ? `/${item.label}` : item.label}
+            <span className={cn("font-medium tabular-nums", (item.kind === "command" || item.kind === "skill") && "text-foreground")}>
+              {item.kind === "command" ? `/${item.label}` : item.kind === "skill" ? `$${item.label}` : item.label}
             </span>
             {item.description ? (
               <span className="text-muted-foreground truncate">{item.description}</span>
