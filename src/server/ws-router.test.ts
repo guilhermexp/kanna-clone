@@ -103,6 +103,7 @@ const DEFAULT_APP_SETTINGS_SNAPSHOT: AppSettingsSnapshot = {
       planMode: false,
     },
   },
+  alwaysExpandToolGroups: false,
   warning: null,
   filePathDisplay: "~/.kanna/data/settings.json",
 }

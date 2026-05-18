@@ -132,6 +132,11 @@ const analyticsOptions = [
   { value: "enabled" as const, label: "On" },
 ]
 
+const toolGroupExpandOptions = [
+  { value: "collapsed" as const, label: "Auto-collapse" },
+  { value: "expanded" as const, label: "Always expand" },
+]
+
 const QUICK_RESPONSE_PROVIDER_OPTIONS: Array<{ value: LlmProviderKind; label: string }> = [
   { value: "openai", label: "OpenAI" },
   { value: "openrouter", label: "OpenRouter" },
@@ -1071,6 +1076,12 @@ export function SettingsPage() {
     }
   }
 
+  function handleAlwaysExpandToolGroupsChange(nextValue: "expanded" | "collapsed") {
+    void handleWriteAppSettings({ alwaysExpandToolGroups: nextValue === "expanded" }).catch((error) => {
+      setAppSettingsError(error instanceof Error ? error.message : "Unable to save tool group settings.")
+    })
+  }
+
   function handleDefaultProviderChange(nextValue: "last_used" | AgentProvider) {
     setDefaultProvider(nextValue)
     void handleWriteAppSettings({ defaultProvider: nextValue }).catch((error) => {
@@ -1186,6 +1197,7 @@ export function SettingsPage() {
     .replaceAll("{column}", "1")
   const analyticsDisclosureEvents = ANALYTICS_STATIC_EVENT_NAMES
   const analyticsSettingValue = appSettings?.analyticsEnabled === false ? "disabled" : "enabled"
+  const alwaysExpandToolGroupsValue = appSettings?.alwaysExpandToolGroups === true ? "expanded" : "collapsed"
   const selectedSection = sidebarItems.find((item) => item.id === selectedPage) ?? sidebarItems[0]
   const selectedSectionSubtitle =
     selectedPage === "keybindings"
@@ -1419,6 +1431,18 @@ export function SettingsPage() {
                           value={theme}
                           onValueChange={handleThemeChange}
                           options={themeOptions}
+                          size="sm"
+                        />
+                      </SettingsRow>
+
+                      <SettingsRow
+                        title="Tool Group Output"
+                        description="Auto-collapse groups of tool calls in transcripts, or keep them always expanded"
+                      >
+                        <SegmentedControl
+                          value={alwaysExpandToolGroupsValue}
+                          onValueChange={(value) => handleAlwaysExpandToolGroupsChange(value as "expanded" | "collapsed")}
+                          options={toolGroupExpandOptions}
                           size="sm"
                         />
                       </SettingsRow>

@@ -1,5 +1,5 @@
 import { type MouseEvent as ReactMouseEvent } from "react"
-import { Check, Flower, GitBranch, Globe, Loader2, Menu, MoreHorizontal, PanelLeft, PanelRight, SquarePen, Terminal, UserRoundPlus } from "lucide-react"
+import { Check, Flower, FolderTree, GitBranch, Globe, Loader2, Menu, MoreHorizontal, PanelLeft, PanelRight, SquarePen, Terminal, UserRoundPlus } from "lucide-react"
 import type { EditorOpenSettings, EditorPreset, OpenExternalAction } from "../../../shared/protocol"
 import { Button } from "../ui/button"
 import { CardHeader } from "../ui/card"
@@ -98,9 +98,10 @@ interface Props {
   localPath?: string
   embeddedTerminalVisible?: boolean
   onToggleEmbeddedTerminal?: () => void
-  rightPanel?: "hidden" | "git" | "browser"
+  rightPanel?: "hidden" | "git" | "browser" | "files"
   onToggleGitPanel?: () => void
   onToggleBrowserPanel?: () => void
+  onToggleFilesPanel?: () => void
   onOpenExternal?: (action: OpenExternalAction, editor?: EditorOpenSettings) => void
   onExportTranscript?: () => void
   canExportTranscript?: boolean
@@ -129,6 +130,7 @@ export function ChatNavbar({
   rightPanel = "hidden",
   onToggleGitPanel,
   onToggleBrowserPanel,
+  onToggleFilesPanel,
   onOpenExternal,
   onExportTranscript,
   canExportTranscript = false,
@@ -152,9 +154,17 @@ export function ChatNavbar({
       : (branchName ?? "Detached HEAD")
   const isMac = platform === "darwin"
   const rightPanelVisible = rightPanel !== "hidden"
-  const handleCloseRightPanel = rightPanel === "browser" ? onToggleBrowserPanel : rightPanel === "git" ? onToggleGitPanel : undefined
-  const showBrowserPanelButton = rightPanel === "hidden" || rightPanel === "git"
-  const showGitPanelButton = rightPanel === "hidden" || rightPanel === "browser"
+  const handleCloseRightPanel =
+    rightPanel === "browser"
+      ? onToggleBrowserPanel
+      : rightPanel === "git"
+        ? onToggleGitPanel
+        : rightPanel === "files"
+          ? onToggleFilesPanel
+          : undefined
+  const showBrowserPanelButton = rightPanel !== "browser"
+  const showGitPanelButton = rightPanel !== "git"
+  const showFilesPanelButton = rightPanel !== "files"
 
   return (
     <CardHeader
@@ -203,7 +213,7 @@ export function ChatNavbar({
 
         <div className="flex-1 min-w-0" />
 
-        {localPath && (onOpenExternal || onToggleEmbeddedTerminal || onToggleGitPanel || onToggleBrowserPanel || onExportTranscript) ? (
+        {localPath && (onOpenExternal || onToggleEmbeddedTerminal || onToggleGitPanel || onToggleBrowserPanel || onToggleFilesPanel || onExportTranscript) ? (
           <div className="flex items-center gap-2 flex-shrink-0">
             {onOpenExternal ? (
               <div className="hidden md:block border border-border/70 rounded-[9px] backdrop-blur-lg">
@@ -217,7 +227,7 @@ export function ChatNavbar({
                 />
               </div>
             ) : null}
-            {(onToggleEmbeddedTerminal || onToggleGitPanel || onToggleBrowserPanel || onExportTranscript) ? (
+            {(onToggleEmbeddedTerminal || onToggleGitPanel || onToggleBrowserPanel || onToggleFilesPanel || onExportTranscript) ? (
               <div className="flex items-center  rounded-[9px] h-[30px]">
                 <NavbarOverflowMenu
                   showOnDesktop={rightPanelVisible}
@@ -266,6 +276,20 @@ export function ChatNavbar({
                     ) : (
                       <UserRoundPlus strokeWidth={2} className="h-4" />
                     )}
+                  </Button>
+                ) : null}
+                {onToggleFilesPanel && showFilesPanelButton ? (
+                  <Button
+                    variant="ghost"
+                    size="none"
+                    onClick={onToggleFilesPanel}
+                    title="Files"
+                    aria-label="Files"
+                    className={cn(
+                      "border border-border/0 hover:!border-border/0 px-1.5 h-9 hover:!bg-transparent"
+                    )}
+                  >
+                    <FolderTree strokeWidth={2.25} className="h-4" />
                   </Button>
                 ) : null}
                 {onToggleBrowserPanel && showBrowserPanelButton ? (

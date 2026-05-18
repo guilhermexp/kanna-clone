@@ -1,5 +1,6 @@
 import { LegendList, type LegendListRef } from "@legendapp/list/react"
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useAppSettingsStore } from "../../stores/appSettingsStore"
 import { ArrowDown, Flower, Upload } from "lucide-react"
 import { AnimatedShinyText } from "../../components/ui/animated-shiny-text"
 import { DrainingIndicator } from "../../components/messages/DrainingIndicator"
@@ -93,6 +94,7 @@ export const ChatTranscriptViewport = memo(function ChatTranscriptViewport({
   const previousRowCountRef = useRef(0)
   const localLinkMenuTriggerRef = useRef<HTMLSpanElement | null>(null)
   const [toolGroupExpanded, setToolGroupExpanded] = useState<Record<string, boolean>>({})
+  const alwaysExpandToolGroups = useAppSettingsStore((store) => store.settings?.alwaysExpandToolGroups ?? false)
   const [localLinkMenuTarget, setLocalLinkMenuTarget] = useState<OpenLocalLinkTarget | null>(null)
   const isMac = platform === "darwin"
 
@@ -214,13 +216,13 @@ export const ChatTranscriptViewport = memo(function ChatTranscriptViewport({
     <div className="mx-auto w-full max-w-[800px] pb-5" data-transcript-row-id={item.id}>
       <KannaTranscriptRow
         row={item}
-        toolGroupExpanded={item.kind === "tool-group" ? (toolGroupExpanded[item.id] ?? false) : undefined}
+        toolGroupExpanded={item.kind === "tool-group" ? (alwaysExpandToolGroups || (toolGroupExpanded[item.id] ?? false)) : undefined}
         onToolGroupExpandedChange={handleToolGroupExpandedChange}
         onAskUserQuestionSubmit={onAskUserQuestionSubmit}
         onExitPlanModeConfirm={onExitPlanModeConfirm}
       />
     </div>
-  ), [handleToolGroupExpandedChange, onAskUserQuestionSubmit, onExitPlanModeConfirm, toolGroupExpanded])
+  ), [alwaysExpandToolGroups, handleToolGroupExpandedChange, onAskUserQuestionSubmit, onExitPlanModeConfirm, toolGroupExpanded])
 
   const listHeader = (
     <div className="mx-auto w-full max-w-[800px]" style={{ paddingTop: `${headerOffsetPx}px` }}>
@@ -267,7 +269,7 @@ export const ChatTranscriptViewport = memo(function ChatTranscriptViewport({
         <LegendList<ResolvedTranscriptRow>
           ref={listRef}
           data={resolvedRows}
-          extraData={toolGroupExpanded}
+          extraData={{ toolGroupExpanded, alwaysExpandToolGroups }}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           estimatedItemSize={96}

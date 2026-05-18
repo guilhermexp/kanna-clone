@@ -437,6 +437,7 @@ export interface AppSettingsSnapshot {
   }
   defaultProvider: DefaultProviderPreference
   providerDefaults: ChatProviderPreferences
+  alwaysExpandToolGroups: boolean
   warning: string | null
   filePathDisplay: string
 }
@@ -450,6 +451,7 @@ export interface AppSettingsPatch {
   terminal?: Partial<AppSettingsSnapshot["terminal"]>
   editor?: Partial<AppSettingsSnapshot["editor"]>
   defaultProvider?: DefaultProviderPreference
+  alwaysExpandToolGroups?: boolean
   providerDefaults?: {
     claude?: Partial<ProviderPreference<ClaudeModelOptions>>
     codex?: Partial<ProviderPreference<CodexModelOptions>>

@@ -393,7 +393,7 @@ function KannaSidebarImpl({
         )}
         style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
       >
-        <div className="px-[5px] h-[47px] md:h-auto md:py-1 border-b grid grid-cols-[40px_minmax(0,1fr)_40px] items-center md:pl-3 md:pr-1 md:flex md:justify-between">
+        <div className="px-[5px] h-[47px] md:h-auto md:py-1 grid grid-cols-[40px_minmax(0,1fr)_40px] items-center md:pl-3 md:pr-1 md:flex md:justify-between">
           <div className="md:hidden">
             <Button
               variant="ghost"
@@ -527,7 +527,7 @@ function KannaSidebarImpl({
           </div>
         </div>
 
-        <div className="border-t border-border p-2">
+        <div className="p-2">
             <button
             type="button"
             onClick={() => {
@@ -546,8 +546,11 @@ function KannaSidebarImpl({
                 <Settings className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">Settings</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{statusLabel}</span>
+              <div
+                className="flex items-center gap-2 text-xs text-muted-foreground"
+                title={statusLabel}
+                aria-label={statusLabel}
+              >
                 {isConnecting ? (
                   <Loader2 className="h-2 w-2 animate-spin" />
                 ) : (

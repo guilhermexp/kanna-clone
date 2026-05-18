@@ -6,6 +6,9 @@ import type { ChatInputHandle } from "../../components/chat-ui/ChatInput"
 import { ChatNavbar } from "../../components/chat-ui/ChatNavbar"
 import { BrowserPanel } from "../../components/chat-ui/BrowserPanel"
 import { GitPanel } from "../../components/chat-ui/GitPanel"
+import { FilesPanel } from "../../components/chat-ui/files-panel/FilesPanel"
+import { FileViewer } from "../../components/chat-ui/file-viewer/FileViewer"
+import { useFileTreeStore } from "../../stores/fileTreeStore"
 import { useAppDialog } from "../../components/ui/app-dialog"
 import { Card, CardContent } from "../../components/ui/card"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../../components/ui/resizable"
@@ -27,6 +30,8 @@ import { useStickyChatFocus } from "../useStickyChatFocus"
 import { useTerminalToggleAnimation } from "../useTerminalToggleAnimation"
 import type { KannaState } from "../useKannaState"
 import { getNextMeasuredInputHeight, getTranscriptPaddingBottom } from "../useKannaState"
+import { AskUserQuestionMessage } from "../../components/messages/AskUserQuestionMessage"
+import type { ProcessedToolCall } from "../../components/messages/types"
 import { ChatInputDock } from "./ChatInputDock"
 import { ChatTranscriptViewport } from "./ChatTranscriptViewport"
 import { TerminalWorkspaceShell } from "./TerminalWorkspaceShell"
@@ -479,7 +484,18 @@ export function ChatPage() {
   const { inputRef, syncInputHeight, transcriptPaddingBottom } = useTranscriptPaddingBottom()
   const [showScrollToBottom, setShowScrollToBottom] = useState(false)
   const [pendingTerminalCommands, setPendingTerminalCommands] = useState<Record<string, string>>({})
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null)
+  const viewerMode = useFileTreeStore((s) => s.viewerMode)
   const showEmptyState = state.messages.length === 0 && state.runtime?.title === "New Chat"
+  const pendingAskUserQuestion = useMemo(() => {
+    const id = state.latestToolIds?.AskUserQuestion
+    if (!id) return null
+    const found = state.messages.find((m) => m.id === id)
+    if (!found || found.kind !== "tool") return null
+    const tool = found as ProcessedToolCall
+    if (tool.toolKind !== "ask_user_question" || tool.result) return null
+    return tool as Extract<ProcessedToolCall, { toolKind: "ask_user_question" }>
+  }, [state.latestToolIds, state.messages])
   const projectId = state.activeProjectId
   const projectTerminalLayout = useTerminalLayoutStore((store) => (projectId ? store.projects[projectId] : undefined))
   const terminalLayout = projectTerminalLayout ?? DEFAULT_PROJECT_TERMINAL_LAYOUT
@@ -683,6 +699,11 @@ export function ChatPage() {
   const handleToggleBrowserPanel = useCallback(() => {
     if (!projectId) return
     toggleRightPanel(projectId, "browser")
+  }, [projectId, toggleRightPanel])
+
+  const handleToggleFilesPanel = useCallback(() => {
+    if (!projectId) return
+    toggleRightPanel(projectId, "files")
   }, [projectId, toggleRightPanel])
 
   const handleRunQuickAction = useCallback((command: string) => {
@@ -927,6 +948,7 @@ export function ChatPage() {
           rightPanel={activeRightPanel}
           onToggleGitPanel={projectId ? handleToggleGitPanel : undefined}
           onToggleBrowserPanel={projectId ? handleToggleBrowserPanel : undefined}
+          onToggleFilesPanel={projectId ? handleToggleFilesPanel : undefined}
           onOpenExternal={handleOpenExternal}
           onExportTranscript={state.activeChatId ? () => void state.handleShareChat(state.activeChatId) : undefined}
           canExportTranscript={Boolean(state.activeChatId) && !state.isExportingStandalone}
@@ -976,6 +998,18 @@ export function ChatPage() {
           showEmptyState={showEmptyState}
         />
       </CardContent>
+
+      {pendingAskUserQuestion ? (
+        <div className="px-4 pb-2 relative z-20">
+          <div className="w-full max-w-[800px] mx-auto">
+            <AskUserQuestionMessage
+              message={pendingAskUserQuestion}
+              onSubmit={state.handleAskUserQuestion}
+              isLatest={true}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <ChatInputDock
         inputRef={inputRef}
@@ -1093,9 +1127,34 @@ export function ChatPage() {
   ])
   const rightPanelContent = activeRightPanel === "browser" && projectId
     ? <BrowserPanel projectId={projectId} socket={state.socket} onClose={handleCloseRightSidebar} onRunQuickAction={handleRunQuickAction} />
-    : gitPanelContentProps
-      ? <ChatSidebarContent {...gitPanelContentProps} />
-      : null
+    : activeRightPanel === "files" && projectId && state.navbarLocalPath
+      ? <FilesPanel projectId={projectId} worktreePath={state.navbarLocalPath} socket={state.socket} onClose={handleCloseRightSidebar} onSelectFile={setPreviewFilePath} />
+      : gitPanelContentProps
+        ? <ChatSidebarContent {...gitPanelContentProps} />
+        : null
+
+  const showSidePeekViewer = Boolean(previewFilePath && viewerMode === "side-peek" && state.navbarLocalPath)
+  const workspaceWithViewer = showSidePeekViewer && state.navbarLocalPath && previewFilePath ? (
+    <ResizablePanelGroup
+      key={`${projectId ?? "noproject"}-viewer-split`}
+      orientation="horizontal"
+      className="flex-1 min-h-0 h-full"
+    >
+      <ResizablePanel id="chat-pane" defaultSize="55%" minSize="25%" className="min-h-0 min-w-0">
+        {workspace}
+      </ResizablePanel>
+      <ResizableHandle withHandle={false} orientation="horizontal" />
+      <ResizablePanel id="viewer-pane" defaultSize="45%" minSize="25%" className="min-h-0 min-w-0">
+        <FileViewer
+          filePath={previewFilePath}
+          projectPath={state.navbarLocalPath}
+          socket={state.socket}
+          onClose={() => setPreviewFilePath(null)}
+          mode="side-peek"
+        />
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  ) : workspace
 
   return (
     <div ref={layoutRootRef} className="flex-1 flex flex-col min-w-0 relative">
@@ -1138,7 +1197,7 @@ export function ChatPage() {
             className="min-h-0 min-w-0"
             groupResizeBehavior="preserve-relative-size"
           >
-            {workspace}
+            {workspaceWithViewer}
           </ResizablePanel>
           <ResizableHandle
             withHandle={false}
@@ -1155,7 +1214,7 @@ export function ChatPage() {
           />
         </ResizablePanelGroup>
       ) : (
-        workspace
+        workspaceWithViewer
       )}
       {isMobileRightSidebarOverlay ? (
         <MobileSidebarPane
@@ -1164,6 +1223,15 @@ export function ChatPage() {
           sidebarVisualRef={sidebarVisualRef}
           onClose={handleCloseRightSidebar}
           content={rightPanelContent}
+        />
+      ) : null}
+      {previewFilePath && state.navbarLocalPath && viewerMode === "dialog" ? (
+        <FileViewer
+          filePath={previewFilePath}
+          projectPath={state.navbarLocalPath}
+          socket={state.socket}
+          onClose={() => setPreviewFilePath(null)}
+          mode="dialog"
         />
       ) : null}
     </div>

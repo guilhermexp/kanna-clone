@@ -6,6 +6,7 @@ import { stripWorkspacePath } from "../../lib/pathUtils"
 import { AnimatedShinyText } from "../ui/animated-shiny-text"
 import { formatBashCommandTitle, toTitleCase } from "../../lib/formatters"
 import { FileContentView } from "./FileContentView"
+import { useAppSettingsStore } from "../../stores/appSettingsStore"
 
 interface Props {
   message: ProcessedToolCall
@@ -84,6 +85,7 @@ export function ReadResultImages({ images }: { images: ReadonlyArray<ReadImageBl
 }
 
 export function ToolCallMessage({ message, isLoading = false, localPath }: Props) {
+  const alwaysExpand = useAppSettingsStore((store) => store.settings?.alwaysExpandToolGroups ?? false)
   const hasResult = message.result !== undefined
   const showLoadingState = !hasResult && isLoading
 
@@ -188,6 +190,7 @@ export function ToolCallMessage({ message, isLoading = false, localPath }: Props
   return (
     <MetaRow className="w-full">
       <ExpandableRow
+        defaultExpanded={alwaysExpand}
         expandedContent={
           <VerticalLineContainer className="my-4 text-sm">
             <div className="flex flex-col gap-2">

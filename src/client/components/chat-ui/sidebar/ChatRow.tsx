@@ -8,6 +8,7 @@ import { formatSidebarAgeLabel } from "../../../lib/formatters"
 import { getSidebarChatTimestamp } from "../../../lib/sidebarChats"
 import { cn, normalizeChatId } from "../../../lib/utils"
 import { ChatRowMenu } from "./Menus"
+import { AgentIcon } from "./AgentIcon"
 
 const loadingStatuses = new Set(["starting", "running"])
 
@@ -55,6 +56,7 @@ function ChatRowImpl({
       )}
       onClick={() => onSelectChat(chat.chatId)}
     >
+      {chat.provider ? <AgentIcon provider={chat.provider} /> : null}
       {loadingStatuses.has(chat.status) ? (
         <Loader2 className="size-3.5 flex-shrink-0 animate-spin text-logo" />
       ) : chat.status === "waiting_for_user" ? (

@@ -15,6 +15,7 @@ import { EventStore } from "./event-store"
 import { openExternal } from "./external-open"
 import { KeybindingsManager } from "./keybindings"
 import { killLocalHttpServer, listLocalHttpServers } from "./local-http-servers"
+import { clearProjectFilesCache, filterProjectFiles, listProjectFiles, readBinaryFileSafe, readTextFileSafe } from "./file-tree"
 import { ensureProjectDirectory, resolveLocalPath } from "./paths"
 import { readProjectQuickActions, writeProjectQuickActions } from "./project-quick-actions"
 import { writeStandaloneTranscriptExport } from "./standalone-export"
@@ -481,6 +482,7 @@ export function createWsRouter({
         planMode: false,
       },
     },
+    alwaysExpandToolGroups: false,
     warning: null,
     filePathDisplay: "~/.kanna/data/settings.json",
   }
@@ -1068,6 +1070,44 @@ export function createWsRouter({
             throw new Error("Project not found")
           }
           const result = await writeProjectQuickActions(project.localPath, command.quickActions)
+          send(ws, { v: PROTOCOL_VERSION, type: "ack", id, result })
+          return
+        }
+        case "project.files.list": {
+          const project = store.getProject(command.projectId)
+          if (!project) {
+            throw new Error("Project not found")
+          }
+          const entries = await listProjectFiles(project.localPath, command.showHidden === true)
+          send(ws, { v: PROTOCOL_VERSION, type: "ack", id, result: { entries, projectPath: project.localPath } })
+          return
+        }
+        case "project.files.clearCache": {
+          const project = store.getProject(command.projectId)
+          if (!project) {
+            throw new Error("Project not found")
+          }
+          clearProjectFilesCache(project.localPath)
+          send(ws, { v: PROTOCOL_VERSION, type: "ack", id, result: { success: true } })
+          return
+        }
+        case "project.files.search": {
+          const project = store.getProject(command.projectId)
+          if (!project) {
+            throw new Error("Project not found")
+          }
+          const entries = await listProjectFiles(project.localPath, command.showHidden === true)
+          const results = filterProjectFiles(entries, command.query, command.limit ?? 50, command.typeFilter)
+          send(ws, { v: PROTOCOL_VERSION, type: "ack", id, result: { results, projectPath: project.localPath } })
+          return
+        }
+        case "project.files.readText": {
+          const result = await readTextFileSafe(command.filePath)
+          send(ws, { v: PROTOCOL_VERSION, type: "ack", id, result })
+          return
+        }
+        case "project.files.readBinary": {
+          const result = await readBinaryFileSafe(command.filePath)
           send(ws, { v: PROTOCOL_VERSION, type: "ack", id, result })
           return
         }

@@ -52,6 +52,7 @@ function expectedSettingsSnapshot(filePath: string, overrides: Partial<AppSettin
         planMode: false,
       },
     },
+    alwaysExpandToolGroups: false,
     warning: null,
     filePathDisplay: filePath,
     ...overrides,

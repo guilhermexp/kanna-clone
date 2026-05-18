@@ -238,6 +238,18 @@ export type ClientCommand =
   | { type: "terminal.input"; terminalId: string; data: string }
   | { type: "terminal.resize"; terminalId: string; cols: number; rows: number }
   | { type: "terminal.close"; terminalId: string }
+  | { type: "project.files.list"; projectId: string; showHidden?: boolean }
+  | { type: "project.files.clearCache"; projectId: string }
+  | {
+      type: "project.files.search"
+      projectId: string
+      query: string
+      limit?: number
+      typeFilter?: "file" | "folder"
+      showHidden?: boolean
+    }
+  | { type: "project.files.readText"; filePath: string }
+  | { type: "project.files.readBinary"; filePath: string }
 
 export type OpenExternalAction = Extract<ClientCommand, { type: "system.openExternal" }>["action"]
 

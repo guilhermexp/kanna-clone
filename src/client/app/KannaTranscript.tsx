@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from "react"
+import { useAppSettingsStore } from "../stores/appSettingsStore"
 import type { AskUserQuestionItem, ProcessedToolCall } from "../components/messages/types"
 import type { AskUserQuestionAnswerMap, ChatAttachment, HydratedTranscriptMessage } from "../../shared/types"
 import { UserMessage } from "../components/messages/UserMessage"
@@ -385,12 +386,16 @@ const TranscriptSingleRow = memo(function TranscriptSingleRow({
         break
       case "tool":
         if (message.toolKind === "ask_user_question") {
+          if (isLatestAskUserQuestion) {
+            rendered = null
+            break
+          }
           rendered = (
             <AskUserQuestionMessage
               key={message.id}
               message={message}
               onSubmit={onAskUserQuestionSubmit}
-              isLatest={isLatestAskUserQuestion}
+              isLatest={false}
             />
           )
           break
@@ -671,6 +676,7 @@ function KannaTranscriptImpl({
   onExitPlanModeConfirm,
 }: KannaTranscriptProps) {
   const [toolGroupExpanded, setToolGroupExpanded] = useState<Record<string, boolean>>({})
+  const alwaysExpandToolGroups = useAppSettingsStore((store) => store.settings?.alwaysExpandToolGroups ?? false)
   const rows = useMemo(() => buildResolvedTranscriptRows(messages, {
     isLoading,
     localPath,
@@ -696,7 +702,7 @@ function KannaTranscriptImpl({
         >
           <KannaTranscriptRow
             row={row}
-            toolGroupExpanded={row.kind === "tool-group" ? (toolGroupExpanded[row.id] ?? false) : undefined}
+            toolGroupExpanded={row.kind === "tool-group" ? (alwaysExpandToolGroups || (toolGroupExpanded[row.id] ?? false)) : undefined}
             onToolGroupExpandedChange={handleToolGroupExpandedChange}
             onAskUserQuestionSubmit={onAskUserQuestionSubmit}
             onExitPlanModeConfirm={onExitPlanModeConfirm}
