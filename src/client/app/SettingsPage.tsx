@@ -99,13 +99,6 @@ const sidebarItems = [
     icon: Command,
     subtitle: "Edit global app shortcuts stored in the active keybindings file.",
   },
-  // always last
-  {
-    id: "changelog",
-    label: "Changelog",
-    icon: BookText,
-    subtitle: "Release notes pulled from the public GitHub releases feed.",
-  },
 ] as const
 type SidebarItem = (typeof sidebarItems)[number]
 type SidebarPageId = SidebarItem["id"]
@@ -812,11 +805,8 @@ export function SettingsPage() {
   const { sectionId } = useParams<{ sectionId: string }>()
   const state = useOutletContext<KannaState>()
   const { theme, setTheme } = useTheme()
-  const [changelogStatus, setChangelogStatus] = useState<ChangelogStatus>("idle")
   const [signingOut, setSigningOut] = useState(false)
   const [authEnabled, setAuthEnabled] = useState(false)
-  const [releases, setReleases] = useState<GithubRelease[]>([])
-  const [changelogError, setChangelogError] = useState<string | null>(null)
   const selectedPage = resolveSettingsSectionId(sectionId) ?? "general"
   const isConnecting = state.connectionStatus === "connecting" || !state.localProjectsReady
   const machineName = state.localProjects?.machine.displayName ?? "Unavailable"
@@ -955,30 +945,6 @@ export function SettingsPage() {
     if (selectedPage !== "providers" || isConnecting) return
     void handleReadLlmProvider()
   }, [handleReadLlmProvider, isConnecting, selectedPage])
-
-  useEffect(() => {
-    if (selectedPage !== "changelog" || isConnecting) return
-
-    let cancelled = false
-    setChangelogStatus("loading")
-    setChangelogError(null)
-
-    void loadChangelog()
-      .then((nextReleases) => {
-        if (cancelled) return
-        setReleases(nextReleases)
-        setChangelogStatus("success")
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return
-        setChangelogError(error instanceof Error ? error.message : "Unable to load changelog.")
-        setChangelogStatus("error")
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [isConnecting, selectedPage])
 
   function commitScrollback() {
     const nextValue = Number(scrollbackDraft)
@@ -1173,22 +1139,6 @@ export function SettingsPage() {
     }
     setLlmProviderDraft(nextDraft)
     void commitLlmProvider(nextDraft)
-  }
-
-  function retryChangelog() {
-    changelogCache = null
-    setChangelogStatus("loading")
-    setChangelogError(null)
-
-    void loadChangelog({ force: true })
-      .then((nextReleases) => {
-        setReleases(nextReleases)
-        setChangelogStatus("success")
-      })
-      .catch((error: unknown) => {
-        setChangelogError(error instanceof Error ? error.message : "Unable to load changelog.")
-        setChangelogStatus("error")
-      })
   }
 
   const customEditorPreview = editorCommandDraft
@@ -1842,22 +1792,7 @@ export function SettingsPage() {
                   </div>
                 ) : selectedPage === "skills" ? (
                   <SkillsSection state={state} />
-                ) : (
-                  <ChangelogSection
-                    status={changelogStatus}
-                    releases={releases}
-                    error={changelogError}
-                    onRetry={retryChangelog}
-                    updateSnapshot={updateSnapshot}
-                    currentVersion={appVersion}
-                    onInstallUpdate={() => {
-                      void state.handleInstallUpdate()
-                    }}
-                    onCheckForUpdates={() => {
-                      void state.handleCheckForUpdates({ force: true })
-                    }}
-                  />
-                )}
+                ) : null}
               </div>
             )}
 

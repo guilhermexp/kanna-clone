@@ -19,6 +19,7 @@ interface ChatInputDockProps {
   contextWindowSnapshot: ContextWindowSnapshot | null
   onSubmit: KannaState["handleSend"]
   onCancel: () => void
+  socket: KannaState["socket"]
 }
 
 export const ChatInputDock = memo(function ChatInputDock({
@@ -37,6 +38,7 @@ export const ChatInputDock = memo(function ChatInputDock({
   contextWindowSnapshot,
   onSubmit,
   onCancel,
+  socket,
 }: ChatInputDockProps) {
   return (
     <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
@@ -56,6 +58,7 @@ export const ChatInputDock = memo(function ChatInputDock({
           availableProviders={availableProviders}
           contextWindowSnapshot={contextWindowSnapshot}
           previousPrompt={previousPrompt}
+          socket={socket}
         />
       </div>
     </div>

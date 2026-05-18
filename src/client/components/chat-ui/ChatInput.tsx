@@ -25,6 +25,9 @@ import { AttachmentFileCard, AttachmentImageCard } from "../messages/AttachmentC
 import { AttachmentPreviewModal } from "../messages/AttachmentPreviewModal"
 import { classifyAttachmentPreview } from "../messages/attachmentPreview"
 import { overrideContextWindowMaxTokens, type ContextWindowSnapshot } from "../../lib/contextWindow"
+import type { KannaSocket } from "../../app/socket"
+import { AutocompletePopover } from "./chat-input-autocomplete/AutocompletePopover"
+import { useAutocomplete } from "./chat-input-autocomplete/useAutocomplete"
 
 const MAX_FILES_PER_DROP = 50
 const MAX_CONCURRENT_UPLOADS = 3
@@ -125,6 +128,7 @@ interface Props {
   availableProviders: ProviderCatalogEntry[]
   contextWindowSnapshot?: ContextWindowSnapshot | null
   previousPrompt?: string | null
+  socket?: KannaSocket | null
 }
 
 export interface ChatInputHandle {
@@ -183,6 +187,7 @@ const ChatInputInner = forwardRef<ChatInputHandle, Props>(function ChatInput({
   availableProviders,
   contextWindowSnapshot = null,
   previousPrompt = null,
+  socket = null,
 }, forwardedRef) {
   const {
     getDraft,
@@ -204,7 +209,23 @@ const ChatInputInner = forwardRef<ChatInputHandle, Props>(function ChatInput({
   const storedComposerState = useChatPreferencesStore((state) => state.chatStates[composerChatId])
   const composerState = storedComposerState ?? getComposerState(composerChatId)
   const [value, setValue] = useState(() => (chatId ? getDraft(chatId) : ""))
+  const [cursor, setCursor] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const autocomplete = useAutocomplete({ value, cursor, projectId: projectId ?? null, socket: socket ?? null })
+
+  function applyAutocompleteSelection(item: Parameters<typeof autocomplete.replaceTriggerWith>[0]) {
+    const { nextValue, nextCursor } = autocomplete.replaceTriggerWith(item)
+    setValue(nextValue)
+    setCursor(nextCursor)
+    if (chatId) setDraft(chatId, nextValue)
+    requestAnimationFrame(() => {
+      const ta = textareaRef.current
+      if (!ta) return
+      ta.focus()
+      ta.selectionStart = nextCursor
+      ta.selectionEnd = nextCursor
+    })
+  }
   const isStandalone = useIsStandalone()
   const [attachments, setAttachments] = useState<ComposerAttachment[]>(() => hydrateComposerAttachments(chatId ? getAttachmentDrafts(chatId) : []))
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null)
@@ -553,6 +574,34 @@ const ChatInputInner = forwardRef<ChatInputHandle, Props>(function ChatInput({
   }
 
   function handleKeyDown(event: React.KeyboardEvent) {
+    if (autocomplete.open) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault()
+        autocomplete.setHighlightedIndex(
+          Math.min(autocomplete.items.length - 1, autocomplete.highlightedIndex + 1),
+        )
+        return
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault()
+        autocomplete.setHighlightedIndex(Math.max(0, autocomplete.highlightedIndex - 1))
+        return
+      }
+      if (event.key === "Enter" || event.key === "Tab") {
+        const item = autocomplete.items[autocomplete.highlightedIndex]
+        if (item) {
+          event.preventDefault()
+          applyAutocompleteSelection(item)
+          return
+        }
+      }
+      if (event.key === "Escape") {
+        event.preventDefault()
+        autocomplete.dismiss()
+        return
+      }
+    }
+
     if (event.key === "Tab" && !event.shiftKey) {
       event.preventDefault()
       focusNextChatInput(textareaRef.current, document)
@@ -684,7 +733,17 @@ const ChatInputInner = forwardRef<ChatInputHandle, Props>(function ChatInput({
             </ScrollArea>
           ) : null}
 
-          <div className="flex items-end max-w-[840px] mx-auto border dark:bg-card/40 backdrop-blur-lg border-border rounded-[29px] pr-1.5">
+          <div className="relative flex items-end max-w-[840px] mx-auto border dark:bg-card/40 backdrop-blur-lg border-border rounded-[29px] pr-1.5">
+            {autocomplete.open ? (
+              <AutocompletePopover
+                items={autocomplete.items}
+                highlightedIndex={autocomplete.highlightedIndex}
+                onHighlight={autocomplete.setHighlightedIndex}
+                onSelect={applyAutocompleteSelection}
+                loading={autocomplete.loading}
+                emptyMessage={autocomplete.trigger?.trigger === "@" ? "No files match" : "No commands match"}
+              />
+            ) : null}
             <label
               aria-label="Add attachment"
               className={cn(
@@ -709,23 +768,38 @@ const ChatInputInner = forwardRef<ChatInputHandle, Props>(function ChatInput({
                 }}
               />
             </label>
-            <Textarea
-              ref={setTextareaRefs}
-              placeholder="Build something..."
-              value={value}
-              autoFocus
-              {...{ [CHAT_INPUT_ATTRIBUTE]: "" }}
-              rows={1}
-              onChange={(event) => {
-                setValue(event.target.value)
-                if (chatId) setDraft(chatId, event.target.value)
-                autoResize()
-              }}
-              onPaste={handlePaste}
-              onKeyDown={handleKeyDown}
-              disabled={disabled}
-              className="flex-1 text-base p-3 md:p-4 !pr-2 pl-0 md:pl-6 resize-none max-h-[200px] outline-none bg-transparent border-0 shadow-none"
-            />
+            <div className="flex-1">
+              <Textarea
+                ref={setTextareaRefs}
+                placeholder="Build something..."
+                value={value}
+                autoFocus
+                {...{ [CHAT_INPUT_ATTRIBUTE]: "" }}
+                rows={1}
+                onChange={(event) => {
+                  setValue(event.target.value)
+                  setCursor(event.target.selectionStart ?? event.target.value.length)
+                  if (chatId) setDraft(chatId, event.target.value)
+                  autoResize()
+                }}
+                onSelect={(event) => {
+                  const ta = event.currentTarget
+                  setCursor(ta.selectionStart ?? 0)
+                }}
+                onKeyUp={(event) => {
+                  const ta = event.currentTarget
+                  setCursor(ta.selectionStart ?? 0)
+                }}
+                onClick={(event) => {
+                  const ta = event.currentTarget
+                  setCursor(ta.selectionStart ?? 0)
+                }}
+                onPaste={handlePaste}
+                onKeyDown={handleKeyDown}
+                disabled={disabled}
+                className="w-full text-base p-3 md:p-4 !pr-2 pl-0 md:pl-6 resize-none max-h-[200px] outline-none bg-transparent border-0 shadow-none"
+              />
+            </div>
             <Button
               type="button"
               onPointerDown={(event) => {

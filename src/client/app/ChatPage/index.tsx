@@ -1027,6 +1027,7 @@ export function ChatPage() {
         contextWindowSnapshot={contextWindowSnapshot}
         onSubmit={handleChatSubmit}
         onCancel={handleCancel}
+        socket={state.socket}
       />
     </Card>
   )
